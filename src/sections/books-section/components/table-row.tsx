@@ -54,8 +54,8 @@ const TableRow = ({
       onDragEnd={handleDragEnd}
       className={cn(
         'transition duration-150 ease-in-out cursor-pointer',
-        isHighlighted && 'bg-green-50',
-        isMissing && 'bg-red-50'
+        isHighlighted && 'bg-dark-green',
+        isMissing && 'bg-dark-red'
       )}
       onClick={(e) => onRowClick(e)}
       data-file-title={file.title}
@@ -65,7 +65,7 @@ const TableRow = ({
         <td
           key={col.key}
           className={cn(
-            'py-1 px-1 text-sm text-gray-800 truncate',
+            'py-1 px-1 text-sm text-text-primary truncate',
             col.key === 'title' && 'max-w-96'
           )}
         >
@@ -94,7 +94,7 @@ const TableRow = ({
                     e.stopPropagation();
                     onSearchFile(file);
                   }}
-                  className="ml-1 text-blue-500 hover:text-blue-700"
+                  className="ml-1 text-blue-400 hover:text-blue-500"
                   title="Поиск файла"
                 >
                   🔍

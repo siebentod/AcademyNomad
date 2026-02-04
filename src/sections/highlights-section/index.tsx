@@ -65,8 +65,8 @@ export default function HighlightsFeed() {
   };
 
   return (
-    <div className="overflow-y-auto">
-      <div className="bg-dark-1">
+    <div className="overflow-y-auto border border-t-0 border-border-dark">
+      <div className="bg-surface">
         {selectedBook && (
           <SelectedBookChip
             bookName={selectedBook}

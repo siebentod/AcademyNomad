@@ -50,4 +50,7 @@
   --color-gray-400: rgb(168 168 168);
   --color-gray-500: rgb(133 133 133);
   --color-gray-700: rgb(80 80 80);
+
+  --color-dark-green: #363936;
+  --color-dark-red: hsl(348 12% 21%);
 }

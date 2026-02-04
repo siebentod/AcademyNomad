@@ -33,7 +33,7 @@ function Tabs() {
   };
 
   return (
-    <div className="w-full flex flex-col">
+    <div className="w-full bg-surface flex flex-col border border-border-dark">
       <div className="flex items-center">
         <ProjectCreator onCreate={createNewProject} tabsCount={tabs.length} />
         <TabsList

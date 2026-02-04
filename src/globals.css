@@ -1,6 +1,8 @@
+@import 'tailwindcss';
 @import './drag-and-drop.css';
 @import './colors.css';
-@import 'tailwindcss';
+@import './fonts.css';
+@import './scrollbar.css';
 
 button {
   @apply cursor-pointer;
@@ -8,6 +10,8 @@ button {
 
 body {
   background-color: #1f1f1f;
+  font-family: Carlito;
+  min-height: 100dvh;
 }
 
 .gutter:hover {

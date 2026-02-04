@@ -8,12 +8,12 @@ const TableHeader: React.FC<TableHeaderProps> = ({
   getSortIcon,
 }) => {
   return (
-    <thead className="bg-gray-100">
-      <tr className="text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
+    <thead className="">
+      <tr className="text-left text-sm text-text-secondary uppercase tracking-wider border-b border-border-dark">
         {columns.map((col: TableColumn) => (
           <th
             key={col.key}
-            className={cn("py-2 px-1 border-b border-gray-200 transition duration-150 whitespace-nowrap", col.sortable && "cursor-pointer hover:bg-gray-200")}
+            className={cn("py-2 px-1 transition duration-150 whitespace-nowrap", col.sortable && "cursor-pointer")}
             onClick={() => onSort(col.key)}
           >
             {col.label} {getSortIcon(col.key)}

@@ -18,8 +18,8 @@ const Checkbox = forwardRef<HTMLButtonElement, CheckboxProps>(
         aria-label={ariaLabel}
         onClick={() => onChange(!checked)}
         className={cn(
-          'w-5 h-5 flex items-center justify-center rounded-sm border',
-          checked ? 'bg-red-bg border-[rgb(209,114,119)]' : 'bg-transparent border-gray-600',
+          'w-5 aspect-square flex items-center justify-center rounded-sm border flex-shrink-0',
+          checked ? 'bg-red-bg border-[rgb(209,114,119)]' : 'bg-transparent border-border-light',
           className
         )}
       >

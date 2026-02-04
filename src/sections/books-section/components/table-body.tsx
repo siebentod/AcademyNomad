@@ -17,7 +17,7 @@ const TableBody = ({
   }
 
   return (
-    <tbody className="divide-y divide-gray-200">
+    <tbody className="divide-y divide-border-dark">
       {files.map((file, index) => renderRows(file, index))}
     </tbody>
   );

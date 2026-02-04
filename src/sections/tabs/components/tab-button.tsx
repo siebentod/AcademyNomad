@@ -89,7 +89,7 @@ export function TabButton({ tab, isActive, onClick }: TabButtonProps) {
         ${
           isActive
             ? 'border-b-2 border-[rgb(236,115,121)] text-[rgb(236,115,121)]'
-            : 'text-gray-500 hover:text-gray-400'
+            : 'text-text-secondary hover:text-gray-400'
         }
       `}
     >

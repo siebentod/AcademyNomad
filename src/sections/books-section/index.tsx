@@ -144,8 +144,8 @@ function Table() {
   if (!sortedFiles) return null;
 
   return (
-    <div className="max-h-[calc(100vh-150px)] overflow-y-auto">
-      <table className="min-w-full bg-white">
+    <div className="max-h-[calc(100vh-150px)] overflow-y-auto border border-t-0 border-border-dark">
+      <table className="min-w-full bg-surface">
         <TableHeader
           columns={COLUMNS}
           sortColumn={sortColumn}

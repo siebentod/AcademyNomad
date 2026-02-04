@@ -15,14 +15,14 @@ export default function FilterControls({
         aria-label="Только аннотации"
       />
       <div className="flex flex-col flex-shrink-0">
-        <div className="text-sm font-medium text-gray-200">Только аннотации</div>
+        <div className="text-sm font-medium text-text-secondary">Только аннотации</div>
       </div>
       <input
         type="text"
         placeholder="Search..."
         value={searchText}
         onChange={(e) => onSearchChange(e.target.value)}
-        className="ml-auto flex-shrink-0 px-2 py-1 bg-input-dark border border-border-light rounded text-sm text-gray-200 placeholder-gray-500 focus:outline-none"
+        className="flex-1 min-w-0 px-2 py-1 bg-input-dark border border-border-light rounded text-sm text-text-secondary placeholder-text-muted focus:outline-none"
       />
     </div>
   );

@@ -20,16 +20,16 @@ function App() {
 
   return (
     <>
-      <div className="mx-auto rounded-xl shadow-lg p-8 font-inter max-h-screen relative">
+      <div className="mx-auto p-8 relative">
         <SearchPanel />
 
         <div className="mt-8">
-          <div className="overflow-x-auto rounded-lg shadow-md border border-gray-200">
+          <div className="overflow-x-auto">
             <Tabs />
 
             {activeMode === 'highlights' ? (
               <Split
-                className="flex max-h-[75dvh]"
+                className="flex max-h-[75dvh] bg-surface"
                 sizes={[50, 50]}
                 minSize={200}
                 gutterSize={8}

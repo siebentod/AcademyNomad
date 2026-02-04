@@ -7,7 +7,7 @@ export default function SearchButton({ onClick }: SearchButtonProps) {
     <button
       onClick={onClick}
       type="submit"
-      className="h-[24px] bg-red-bg hover:bg-red-bg-hover rounded-sm text-black flex items-center justify-center font-semibold text-sm px-2"
+      className="h-[24px] bg-red-bg hover:bg-red-bg-hover rounded-sm text-black flex items-center justify-center text-sm px-2"
     >
       Search
     </button>
