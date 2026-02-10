@@ -1,17 +1,16 @@
 import { useState, useEffect } from 'react';
-import { useAppSelector, useAppDispatch } from 'src/redux';
-import { selectSettings } from 'src/redux/settings/settingsSelectors';
-import { setSetting } from 'src/redux/settings/settingsSlice';
 import type { Settings as SettingsType } from 'src/shared/types';
+import { useStore } from 'src/store';
 
 interface SettingsPageProps {
   closeModal: () => void;
 }
 
 function SettingsPage({ closeModal }: SettingsPageProps) {
-  const dispatch = useAppDispatch();
-  const settings = useAppSelector(selectSettings);
+  const saveSettings = useStore((state) => state.saveSettings);
+  const settings = useStore((state) => state.settings);
   const [tempSettings, setTempSettings] = useState<SettingsType>(settings);
+  console.log('settings', settings);
 
   useEffect(() => {
     setTempSettings(settings);
@@ -22,9 +21,7 @@ function SettingsPage({ closeModal }: SettingsPageProps) {
   };
 
   const handleSave = () => {
-    Object.entries(tempSettings).forEach(([key, value]) => {
-      dispatch(setSetting({ key, value }));
-    });
+    saveSettings(tempSettings);
     closeModal();
   };
 
@@ -44,7 +41,9 @@ function SettingsPage({ closeModal }: SettingsPageProps) {
         </div>
         <div className="flex items-center justify-between gap-2">
           <div>
-            <h4 className="text-sm font-medium text-gray-700">Путь к читалке PDF</h4>
+            <h4 className="text-sm font-medium text-gray-700">
+              Путь к читалке PDF
+            </h4>
           </div>
           <input
             type="text"
@@ -53,7 +52,9 @@ function SettingsPage({ closeModal }: SettingsPageProps) {
             onChange={(e) => handleInputChange('pdfReaderPath', e.target.value)}
           />
         </div>
-        <p className="text-sm text-gray-500">Пример: C:\Program Files\Tracker Software\PDF Editor\PDFXEdit.exe</p>
+        <p className="text-sm text-gray-500">
+          Пример: C:\Program Files\Tracker Software\PDF Editor\PDFXEdit.exe
+        </p>
       </div>
 
       <div className="flex justify-end gap-3 pt-4">

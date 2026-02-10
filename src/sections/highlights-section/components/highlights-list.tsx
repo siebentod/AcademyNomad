@@ -7,13 +7,13 @@ export default function HighlightsList({
   visibleHighlightsCount,
   totalFiltered,
   renderItem,
-  setVisibleHighlightsCount,
+  incrementVisibleHighlightsCount,
 }: HighlightsListProps) {
   const loadMoreRef = useIntersectionObserver<HTMLDivElement>(() => {
     const total = totalFiltered;
     console.log('Достигнут последний элемент Списка!');
     if (visibleHighlightsCount < total) {
-      setVisibleHighlightsCount((prev) => Math.min(prev + 50, total));
+      incrementVisibleHighlightsCount(Math.min(50, total - visibleHighlightsCount));
     }
   }, { threshold: 0.1 });
 

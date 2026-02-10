@@ -10,7 +10,7 @@ export default function FileHeader({
     <div key={`file-${index}`} className="mt-1.5 flex items-center">
       {/* <button onClick={() => onHideBook(fileName)}>🙈</button> */}
       <div
-        className="px-1 text-md font-semibold text-gray-300 truncate pr-4 hover:text-white cursor-pointer"
+        className="px-1 ml-2 text-md font-semibold text-gray-300 truncate pr-4 hover:text-white cursor-pointer"
         onClick={() => onSelectBook(fileName)}
         title={`Показать только "${fileName}"`}
       >

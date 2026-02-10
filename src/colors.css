@@ -8,9 +8,6 @@
   --color-black: rgb(30, 30, 30);
   --color-white: rgb(250, 250, 250);
 
-  --color-primary: rgb(231 96 103);
-  --color-primary-hover: var(--color-red-bg);
-
   --color-secondary: rgb(250, 250, 250);
   --color-secondary-hover: rgb(235, 235, 235);
 
@@ -25,6 +22,9 @@
   --color-border-lighter: rgb(140, 140, 140);
 
   --color-card-bg-hover: rgb(50, 50, 50);
+  
+  --color-bg-primary: rgb(236 129 134);
+  --color-bg-primaryhover: rgb(255 201 201);
 
   --color-red-bg: rgb(236 129 134);
   --color-red-bg-hover: rgb(255 201 201);

@@ -23,11 +23,13 @@ export interface ExcludedListItem {
 
 export interface ListItem extends File {
   dateAdded: string;
+  is_pinned?: boolean;
+  pinned_order?: number;
 }
 
 export interface List {
   name: string;
-  items: ExcludedListItem[] | ListItem[];
+  items: ListItem[];
 }
 
 export type Lists = List[];

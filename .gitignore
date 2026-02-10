@@ -30,6 +30,6 @@ src/test/
 vercel.json
 
 # AI
-.agents/
-.cursor/
-.vscode/
+.agents
+.cursor
+.vscode

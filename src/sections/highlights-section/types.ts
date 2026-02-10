@@ -29,7 +29,7 @@ export interface HighlightsListProps {
   visibleHighlightsCount: number;
   totalFiltered: number;
   renderItem: (item: GroupedHighlightItem, index: number) => React.ReactNode;
-  setVisibleHighlightsCount: React.Dispatch<React.SetStateAction<number>>;
+  incrementVisibleHighlightsCount: (increment: number) => void;
 }
 
 export interface DateHeaderProps {

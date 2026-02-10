@@ -1,4 +1,4 @@
-import type { File } from 'shared/types';
+import type { File } from 'src/shared/types';
 
 /**
  * Объединяет файлы из списка проекта с highlights из общего списка файлов

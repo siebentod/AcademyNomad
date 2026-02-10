@@ -1,25 +1,47 @@
 import { formatDate, parsePDFDate, getDateKey } from 'src/shared/lib/utils';
-import { useAppSelector } from 'src/redux';
-import { selectFiles } from 'src/redux/files/filesSelectors';
-import type { FilterState, ProcessedHighlight, GroupedHighlightItem } from '../types';
+import type {
+  ProcessedHighlight,
+  GroupedHighlightItem,
+} from '../types';
 import type { Highlight } from 'src/sections/books-section/types';
+import { useStore } from 'src/store';
 
-export function useHighlights(filters: FilterState, visibleHighlightsCount: number) {
-  const data = useAppSelector(selectFiles);
+export function useHighlights() {
+  const hiddenBooks = useStore((state) => state.view.hiddenBooks);
+  const visibleHighlightsCount = useStore(
+    (state) => state.view.visibleHighlightsCount
+  );
+  const selectedBook = useStore((state) => state.view.selectedBook);
+  const showOnlyAnnotated = useStore((state) => state.view.showOnlyAnnotated);
+  const highlightsSearchText = useStore(
+    (state) => state.view.highlightsSearchText
+  );
+
+  const filters = {
+    selectedBook,
+    hiddenBooks,
+    highlightsSearchText,
+    showOnlyAnnotated,
+  };
+
+  const data = useStore((state) => state.files);
   const resultHighlights: ProcessedHighlight[] = data.length
     ? data
         .flatMap(
           (file) =>
-            file.highlights?.map((highlight: Highlight) => ({
-              page: highlight.page,
-              highlighted_text: highlight.highlighted_text,
-              annotation_text: highlight.annotation_text,
-              date: highlight.date, // оригинальная дата
-              timestamp: parsePDFDate(highlight.date || ''), // обработанная дата
-              fileName: file.title,
-              full_path: file.full_path,
-              color: highlight.color,
-            } as ProcessedHighlight)) || []
+            file.highlights?.map(
+              (highlight: Highlight) =>
+                ({
+                  page: highlight.page,
+                  highlighted_text: highlight.highlighted_text,
+                  annotation_text: highlight.annotation_text,
+                  date: highlight.date, // оригинальная дата
+                  timestamp: parsePDFDate(highlight.date || ''), // обработанная дата
+                  fileName: file.title,
+                  full_path: file.full_path,
+                  color: highlight.color,
+                } as ProcessedHighlight)
+            ) || []
         )
         .sort((a, b) => b.timestamp - a.timestamp)
     : [];
@@ -29,12 +51,17 @@ export function useHighlights(filters: FilterState, visibleHighlightsCount: numb
     const matchesAnnotationFilter =
       !filters.showOnlyAnnotated || Boolean(h.annotation_text);
     const matchesSearch =
-      filters.searchText === '' ||
+      filters.highlightsSearchText === '' ||
       (h.highlighted_text &&
-        h.highlighted_text.toLowerCase().includes(filters.searchText.toLowerCase())) ||
+        h.highlighted_text
+          .toLowerCase()
+          .includes(filters.highlightsSearchText.toLowerCase())) ||
       (h.annotation_text &&
-        h.annotation_text.toLowerCase().includes(filters.searchText.toLowerCase()));
-    const matchesBook = !filters.selectedBook || h.fileName === filters.selectedBook;
+        h.annotation_text
+          .toLowerCase()
+          .includes(filters.highlightsSearchText.toLowerCase()));
+    const matchesBook =
+      !filters.selectedBook || h.fileName === filters.selectedBook;
     const matchesExclusion = !filters.hiddenBooks.includes(h.fileName);
     return (
       matchesAnnotationFilter &&
@@ -44,7 +71,10 @@ export function useHighlights(filters: FilterState, visibleHighlightsCount: numb
     );
   });
 
-  const visibleHighlights: ProcessedHighlight[] = filteredAll.slice(0, visibleHighlightsCount);
+  const visibleHighlights: ProcessedHighlight[] = filteredAll.slice(
+    0,
+    visibleHighlightsCount
+  );
 
   // Группировка
   const dateMap = new Map();

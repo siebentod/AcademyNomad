@@ -6,12 +6,11 @@ import HighlightItem from './components/highlight-item';
 import DateHeader from './components/date-header';
 import BookHeader from './components/book-header';
 import Spinner from 'src/shared/ui/Spinner';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { useHighlights } from './hooks/use-highlights';
-import { selectIsLoading } from 'src/redux/files/filesSelectors';
-import { useAppSelector } from 'src/redux';
-import { useViewFilterContext } from 'src/shared/providers/view-filter-provider';
-import { selectPdfReaderPath } from 'src/redux/settings/settingsSelectors';
+import { useStore } from 'src/store';
+import { useShallow } from 'zustand/shallow';
+import { selectPdfReaderPath } from 'src/store/settings/settingsSelectors';
 import type { ProcessedHighlight } from './types';
 import toast from 'react-hot-toast';
 
@@ -21,46 +20,44 @@ interface OpenFileResult {
 }
 
 export default function HighlightsFeed() {
+  const selectedBook = useStore((state) => state.view.selectedBook);
+  const visibleHighlightsCount = useStore(
+    (state) => state.view.visibleHighlightsCount
+  );
+  const showOnlyAnnotated = useStore((state) => state.view.showOnlyAnnotated);
+  const highlightsSearchText = useStore(
+    (state) => state.view.highlightsSearchText
+  );
+
   const {
-    selectedBook,
-    hiddenBooks,
     removeBookFilter,
-    visibleHighlightsCount,
-    setVisibleHighlightsCount,
-    resetCount,
     selectBook,
     hideBook,
-  } = useViewFilterContext();
-  const [searchText, setSearchText] = useState<string>('');
-  const [showOnlyAnnotated, setShowOnlyAnnotated] = useState<boolean>(false);
-  const isLoading = useAppSelector(selectIsLoading);
-  const programPath = useAppSelector(selectPdfReaderPath);
+    incrementVisibleHighlightsCount,
+    toggleShowOnlyAnnotated,
+    setHighlightsSearchText,
+  } = useStore(useShallow((state) => state.view.actions));
+  const areFilesLoading = useStore((state) => state.areFilesLoading);
+  const programPath = useStore(selectPdfReaderPath);
 
-  const toggleShowOnlyAnnotated = useCallback(() => {
-    setShowOnlyAnnotated((prev) => {
-      resetCount();
-      const next = !prev;
-      return next;
-    });
-  }, [resetCount]);
-
-  const filters = { selectedBook, hiddenBooks, searchText, showOnlyAnnotated };
-
-  const { groupedHighlights, totalFiltered } = useHighlights(
-    filters,
-    visibleHighlightsCount
-  );
+  const { groupedHighlights, totalFiltered } = useHighlights();
 
   const handleOpenHighlight = async (highlight: ProcessedHighlight) => {
     const result = await invoke('open_file', {
       params: {
         path: highlight.full_path,
         page: highlight.page,
-        ...(programPath ? {program_path: programPath} : {}),
+        ...(programPath ? { program_path: programPath } : {}),
       },
     });
     if (!(result as OpenFileResult).success) {
-      toast.error(`Не удалось открыть приложение ${programPath} Открываю в ${(result as OpenFileResult).path === 'explorer' ? 'приложении по умолчанию' : (result as OpenFileResult).path}...`);
+      toast.error(
+        `Не удалось открыть приложение ${programPath} Открываю в ${
+          (result as OpenFileResult).path === 'explorer'
+            ? 'приложении по умолчанию'
+            : (result as OpenFileResult).path
+        }...`
+      );
     }
   };
 
@@ -76,12 +73,12 @@ export default function HighlightsFeed() {
 
         <FilterControls
           showOnlyAnnotated={showOnlyAnnotated}
-          searchText={searchText}
+          searchText={highlightsSearchText}
           onToggleAnnotated={toggleShowOnlyAnnotated}
-          onSearchChange={setSearchText}
+          onSearchChange={setHighlightsSearchText}
         />
 
-        {isLoading ? (
+        {areFilesLoading ? (
           <div className="flex justify-center py-8">
             <Spinner size="lg" />
           </div>
@@ -90,7 +87,7 @@ export default function HighlightsFeed() {
             groupedHighlights={groupedHighlights}
             visibleHighlightsCount={visibleHighlightsCount}
             totalFiltered={totalFiltered}
-            setVisibleHighlightsCount={setVisibleHighlightsCount}
+            incrementVisibleHighlightsCount={incrementVisibleHighlightsCount}
             renderItem={(item, index) =>
               item.type === 'date-header' ? (
                 <DateHeader

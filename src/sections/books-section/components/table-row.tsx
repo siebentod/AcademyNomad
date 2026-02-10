@@ -10,7 +10,7 @@ interface TableRowProps {
   file: File;
   isHighlighted: boolean;
   isMissing: boolean;
-  isLoading: boolean;
+  areFilesLoading: boolean;
   onContextMenu: () => void;
   onDragStart?: (e: React.DragEvent) => void;
   onDragEnd?: (e: React.DragEvent) => void;
@@ -20,6 +20,7 @@ interface TableRowProps {
   onSearchFile?: (file: File) => void;
   COLUMNS: { key: string; label: string }[];
   lastElementRef?: React.RefObject<HTMLTableRowElement | null>;
+  isPinned: boolean;
 }
 
 const TableRow = ({
@@ -27,7 +28,7 @@ const TableRow = ({
   file,
   isHighlighted,
   isMissing,
-  isLoading,
+  areFilesLoading,
   onContextMenu,
   onRowClick,
   isHidden,
@@ -35,6 +36,7 @@ const TableRow = ({
   onSearchFile,
   COLUMNS,
   lastElementRef,
+  isPinned,
 }: TableRowProps) => {
   const { handleDragStart, handleDragEnd } = useDragNDrop();
   const highlightsCount = file.highlights?.length;
@@ -83,12 +85,13 @@ const TableRow = ({
               ) : (
                 ''
               )}
+              {isPinned ? '⭐' : ''}
               {file.is_locked ? '🔒' : ''}
               {file.extension !== 'pdf' && file.extension}
-              {isLoading ? <Spinner size="xs" inline /> : ''}
+              {areFilesLoading ? <Spinner size="xs" inline /> : ''}
               {file.isFromLists ? <span className ="text-blue-500">{highlightsCount}</span> : highlightsCount}
               <span className="text-red-400">{annotations || ''}</span>
-              {!fullTableMode && !isLoading && (!file.highlights || file.isFromLists) && onSearchFile && (
+              {!fullTableMode && !areFilesLoading && (!file.highlights || file.isFromLists) && onSearchFile && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();

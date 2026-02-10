@@ -1,13 +1,8 @@
 import React, { useMemo } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { useContextMenu } from 'src/shared/hooks/useContextMenu';
+import { useTableRowsContextMenu } from './hooks/useTableRowsContextMenu';
 import { useIntersectionObserver } from 'src/shared/hooks/useIntersectionObserver';
-import { useAppDispatch } from 'src/redux';
-import { selectFiles, selectFetchCount } from 'src/redux/files/filesSelectors';
-import { selectIsLoading } from 'src/redux/files/filesSelectors';
-import { setFetchCount } from 'src/redux/files/filesSlice';
-import { DEFAULT_FETCH_COUNT } from 'src/redux/files/config';
-import { selectLists } from 'src/redux/lists/listsSelectors';
+import { DEFAULT_FETCH_COUNT } from 'src/store/files/config';
 
 import { useTableSort } from './hooks/use-table-sort';
 import TableHeader from './components/table-header';
@@ -16,20 +11,18 @@ import TableRow from './components/table-row';
 
 import type { File } from 'src/shared/types';
 import type { TableColumn } from './types';
-import { useViewFilterContext } from 'src/shared/providers/view-filter-provider';
+import { useStore } from 'src/store';
+import { useShallow } from 'zustand/shallow';
 import { mergeProjectFilesWithHighlights } from './utils';
-import { setLoading, replaceFileByField } from 'src/redux/files/filesSlice';
-import { updateFileInAllLists } from 'src/redux/lists/listsSlice';
 import {
   searchFiles,
   buildIncludeQuery,
-} from 'src/sections/search-panel/hooks/searchUtils';
-import { useAppSelector } from 'src/redux';
+} from 'src/sections/top-panel/hooks/searchUtils';
 import {
   selectTypesQuery,
   selectExcludedQuery,
   selectPdfReaderPath,
-} from 'src/redux/settings/settingsSelectors';
+} from 'src/store/settings/settingsSelectors';
 import toast from 'react-hot-toast';
 import type { List } from 'src/shared/types';
 
@@ -45,27 +38,32 @@ const COLUMNS: TableColumn[] = [
 ];
 
 function Table() {
-  const dispatch = useAppDispatch();
-  const { selectBook, hiddenBooks, hideBook, activeProject, activeMode } =
-    useViewFilterContext();
-  const { showFileContextMenu } = useContextMenu();
-  const fetchCount = useAppSelector(selectFetchCount);
-  const typesQuery = useAppSelector(selectTypesQuery);
-  const excludedQuery = useAppSelector(selectExcludedQuery);
-  const programPath = useAppSelector(selectPdfReaderPath);
-
-  const lastElementRef = useIntersectionObserver<HTMLTableRowElement>(
-    () => {
-      if (isLoading) return;
-      dispatch(setLoading(true));
-      dispatch(setFetchCount(fetchCount + DEFAULT_FETCH_COUNT));
-    },
-    { threshold: 0.1, triggerOnce: true }
+  const { selectBook, hideBook, setFetchCount } = useStore(useShallow((state) => state.view.actions));
+  const hiddenBooks = useStore((state) => state.view.hiddenBooks);
+  const activeProject = useStore((state) => state.view.activeProject);
+  const activeMode = useStore((state) => state.view.activeMode);
+  const fetchCount = useStore((state) => state.view.fetchCount);
+  const hasMore = useStore((state) => state.view.hasMore);
+  const { showFileContextMenu } = useTableRowsContextMenu();
+  const typesQuery = useStore(selectTypesQuery);
+  const excludedQuery = useStore(selectExcludedQuery);
+  const programPath = useStore(selectPdfReaderPath);
+  const setLoading = useStore((state) => state.setLoading);
+  const replaceFileByField = useStore((state) => state.replaceFileByField);
+  const updateFileInAllLists = useStore(
+    (state) => state.updateFileInAllLists
   );
 
-  const lists = useAppSelector(selectLists);
-  const everythingFiles = useAppSelector(selectFiles);
-  const isLoading = useAppSelector(selectIsLoading);
+  const lastElementRef = useIntersectionObserver<HTMLTableRowElement>(() => {
+    // console.log('books section hasMore', hasMore);
+    if (areFilesLoading || !hasMore) return;
+    setLoading(true);
+    setFetchCount(fetchCount + DEFAULT_FETCH_COUNT);
+  });
+
+  const lists = useStore((state) => state.lists);
+  const everythingFiles = useStore((state) => state.files);
+  const areFilesLoading = useStore((state) => state.areFilesLoading);
   const files = useMemo(() => {
     if (!activeProject) return everythingFiles;
     const projectItems =
@@ -74,13 +72,15 @@ function Table() {
     return mergeProjectFilesWithHighlights(projectItems, everythingFiles);
   }, [activeProject, lists, everythingFiles]);
 
+  console.log('files', files);
+
   const filesFromLists = useMemo(() => {
     return lists.flatMap((l: List) => l.items) as File[];
   }, [lists]);
 
   const defaultSort = activeProject ? 'modified_date' : null;
   const { sortColumn, sortDirection, sortedFiles, getSortIcon, handleSort } =
-    useTableSort(files, defaultSort);
+    useTableSort(files, defaultSort, activeProject);
 
   const handleFileContextMenu = (file: File) => {
     showFileContextMenu({ file, activeProject });
@@ -111,33 +111,31 @@ function Table() {
 
   const handleSearchFile = async (file: File) => {
     try {
-      dispatch(setLoading(true));
+      setLoading(true);
 
       const includeQuery = buildIncludeQuery([file.file_name]);
       const query = `${typesQuery} ${excludedQuery} ${includeQuery}`.trim();
 
-      const { files: result } = await searchFiles({
+      const result = await searchFiles({
         query,
         includeHighlights: true,
         count: 1,
-      });
+      }) as any;
 
-      if (result.length > 0) {
-        const updatedFile = result[0];
+      if (result?.length) {
+        const updatedFile = result?.[0];
         // Обновляем файл с хайлайтами во всех списках
-        dispatch(updateFileInAllLists({ file: updatedFile }));
-        // Также обновляем в files store
-        dispatch(
-          replaceFileByField({
-            file: updatedFile,
-          })
-        );
+        updateFileInAllLists({ file: updatedFile });
+
+        replaceFileByField({
+          file: updatedFile,
+        });
       }
     } catch (err) {
       console.error('Error searching file:', err);
       toast.error(`Ошибка поиска файла: ${err}`);
     } finally {
-      dispatch(setLoading(false));
+      setLoading(false);
     }
   };
 
@@ -158,7 +156,7 @@ function Table() {
           renderRows={(file, index) => {
             const isHidden = hiddenBooks.includes(file.title);
             const isMissing =
-              !isLoading &&
+              !areFilesLoading &&
               Boolean(activeProject) &&
               !everythingFiles.some((f) => f.full_path === file.full_path);
             const isHighlighted =
@@ -167,6 +165,7 @@ function Table() {
             const isLastItem = Boolean(
               sortedFiles && index === sortedFiles.length - 1
             );
+            const isPinned = activeProject && file.is_pinned;
             return (
               <TableRow
                 key={`${file.full_path}`}
@@ -175,17 +174,18 @@ function Table() {
                 isHighlighted={isHighlighted}
                 isHidden={isHidden}
                 isMissing={isMissing}
-                isLoading={isLoading}
+                areFilesLoading={areFilesLoading}
                 fullTableMode={activeMode !== 'highlights'}
                 onContextMenu={() => handleFileContextMenu(file)}
                 onRowClick={(e: React.MouseEvent) => handleRowClick(e, file)}
                 onSearchFile={handleSearchFile}
                 hideBook={hideBook}
                 lastElementRef={
-                  isLastItem && !activeProject && !isLoading
+                  isLastItem && !activeProject && !areFilesLoading
                     ? lastElementRef
                     : undefined
                 }
+                isPinned={isPinned}
               />
             );
           }}

@@ -2,34 +2,30 @@ import Split from 'react-split';
 import { Toaster } from 'react-hot-toast';
 import BooksSection from 'src/sections/books-section';
 import HighlightsSection from 'src/sections/highlights-section';
-import { useAppSelector } from 'src/redux';
-import { selectIsSettingsLoaded } from 'src/redux/settings/settingsSelectors';
+import { useStore } from 'src/store';
 import ModalsContainer from 'src/sections/modals';
-import Tabs from 'src/sections/tabs';
-import SearchPanel from 'src/sections/search-panel';
-import { useViewFilterContext } from 'src/shared/providers/view-filter-provider';
-import { ViewFilterProvider } from 'src/shared/providers/view-filter-provider';
-import { ModalProvider } from 'src/sections/modals/modalContext';
+import Tabs from 'src/sections/lists-tabs';
+import SearchPanel from 'src/sections/top-panel';
 
 function App() {
-  const isSettingsLoaded = useAppSelector(selectIsSettingsLoaded);
+  const areListsLoaded = useStore((state) => state.areListsLoaded);
 
-  const { activeMode } = useViewFilterContext();
+  const activeMode = useStore((state) => state.view.activeMode);
 
-  if (!isSettingsLoaded) return <div>Загрузка...</div>;
+  if (!areListsLoaded) return <div>Загрузка...</div>;
 
   return (
     <>
-      <div className="mx-auto p-8 relative">
+      <div className="mx-auto p-8 pt-2 relative">
         <SearchPanel />
 
-        <div className="mt-8">
+        <div>
           <div className="overflow-x-auto">
             <Tabs />
 
             {activeMode === 'highlights' ? (
               <Split
-                className="flex max-h-[75dvh] bg-surface"
+                className="flex max-h-[77dvh] bg-surface"
                 sizes={[50, 50]}
                 minSize={200}
                 gutterSize={8}
@@ -66,22 +62,8 @@ function App() {
   );
 }
 
-function Providers({ children }: { children: React.ReactNode }) {
-  return (
-    <ModalProvider>
-      <ViewFilterProvider>
-        {children}
-      </ViewFilterProvider>
-    </ModalProvider>
-  );
-}
-
 function AppWithProviders() {
-  return (
-    <Providers>
-      <App />
-    </Providers>
-  );
+  return <App />;
 }
 
 export default AppWithProviders;
