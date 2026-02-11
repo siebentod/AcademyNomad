@@ -38,3 +38,20 @@ export function getDateKey(timestamp: number) {
     day: '2-digit',
   });
 }
+
+export function processDateToEverythingQuery(isoString: string): string {
+  const date = new Date(isoString);
+
+  // Добавляем 3 часа к UTC времени
+  date.setUTCHours(date.getUTCHours() + 3);
+
+  // Получаем компоненты даты и времени в формате UTC после добавления 3 часов
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0'); // Месяцы начинаются с 0
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  const hours = String(date.getUTCHours()).padStart(2, '0');
+  const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+  const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+}

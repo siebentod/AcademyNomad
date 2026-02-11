@@ -61,6 +61,7 @@ const TableRow = ({
       )}
       onClick={(e) => onRowClick(e)}
       data-file-title={file.title}
+      title={file.full_path}
       onContextMenu={onContextMenu}
     >
       {COLUMNS.map((col) => (
@@ -107,7 +108,7 @@ const TableRow = ({
           ) : col.key === 'modified_date' ? (
             formatDate(parseISODate(file.modified_date || ''))
           ) : (
-            <span title={file.full_path}>
+            <span>
               {String(file[col.key as keyof typeof file] || '')}
             </span>
           )}

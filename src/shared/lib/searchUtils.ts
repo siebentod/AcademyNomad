@@ -1,4 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
+import { File } from '../types';
 
 export interface SearchParams {
   query: string;
@@ -6,13 +7,22 @@ export interface SearchParams {
   count: number;
 }
 
-export interface SearchResult {
-  files: any[];
-  has_more?: boolean;
-  requestId?: number;
+export interface InvokeSearchResult {
+  items: File[];
+  has_more: boolean;
 }
 
-export async function searchFiles(params: SearchParams): Promise<SearchResult> {
+export const searchFileByQuery = async (query: string) => {
+  const result = await searchFiles({
+    query,
+    includeHighlights: true,
+    count: 1,
+  });
+
+  return result;
+};
+
+export async function searchFiles(params: SearchParams) {
   const { query, includeHighlights, count } = params;
 
   const result = await invoke('get_everything', {
@@ -21,11 +31,11 @@ export async function searchFiles(params: SearchParams): Promise<SearchResult> {
       include_highlights: includeHighlights,
       count,
     },
-  });
+  }) as InvokeSearchResult;
 
-  console.log('resultz', result);
+  console.log('searchFiles_result', result);
 
-  return { files: result as any[] };
+  return result;
 }
 
 export function buildSearchQuery({

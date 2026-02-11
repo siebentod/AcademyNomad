@@ -22,7 +22,7 @@ export default function FilterControls({
         placeholder="Search..."
         value={searchText}
         onChange={(e) => onSearchChange(e.target.value)}
-        className="flex-1 min-w-0 px-2 py-1 bg-input-dark border border-border-light rounded text-sm text-text-secondary placeholder-text-muted focus:outline-none"
+        className="flex-1 min-w-0 px-2 py-1 bg-input-dark border border-border-light rounded text-sm text-text-secondary placeholder-text-muted focus:outline-none focus:border-border-lighter"
       />
     </div>
   );

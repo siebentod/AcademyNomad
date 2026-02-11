@@ -131,6 +131,28 @@ export const createListsSlice: StateCreator<
       }
     },
 
+    removeFileFromAllLists: async ({
+      full_path,
+    }) => {
+      let hasChanges = false;
+
+      const updatedLists: Lists = get().lists.map((list) => {
+        const filteredItems = (list.items as ListItem[]).filter((file) => {
+          if (file.full_path === full_path) {
+            hasChanges = true;
+            return false;
+          }
+          return true;
+        });
+
+        return { ...list, items: filteredItems };
+      });
+
+      if (hasChanges) {
+        get()._setLists(updatedLists);
+      }
+    },
+
     pinItem: async ({ listName, fileName }) => {
       const foundList = findListByName(get().lists, listName);
       if (foundList) {

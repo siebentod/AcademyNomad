@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
-import { invoke } from '@tauri-apps/api/core';
 import { useTableRowsContextMenu } from './hooks/useTableRowsContextMenu';
 import { useIntersectionObserver } from 'src/shared/hooks/useIntersectionObserver';
+import { useInvokeOpenFile } from 'src/shared/hooks/useInvokeOpenFile';
 import { DEFAULT_FETCH_COUNT } from 'src/store/files/config';
 
 import { useTableSort } from './hooks/use-table-sort';
@@ -15,21 +15,15 @@ import { useStore } from 'src/store';
 import { useShallow } from 'zustand/shallow';
 import { mergeProjectFilesWithHighlights } from './utils';
 import {
-  searchFiles,
+  searchFileByQuery,
   buildIncludeQuery,
-} from 'src/sections/top-panel/hooks/searchUtils';
+} from 'src/shared/lib/searchUtils';
 import {
   selectTypesQuery,
   selectExcludedQuery,
-  selectPdfReaderPath,
 } from 'src/store/settings/settingsSelectors';
 import toast from 'react-hot-toast';
 import type { List } from 'src/shared/types';
-
-interface OpenFileResult {
-  success: boolean;
-  path: string;
-}
 
 const COLUMNS: TableColumn[] = [
   { key: 'status', label: '', editable: true, sortable: false },
@@ -47,7 +41,7 @@ function Table() {
   const { showFileContextMenu } = useTableRowsContextMenu();
   const typesQuery = useStore(selectTypesQuery);
   const excludedQuery = useStore(selectExcludedQuery);
-  const programPath = useStore(selectPdfReaderPath);
+  const invokeOpenFile = useInvokeOpenFile();
   const setLoading = useStore((state) => state.setLoading);
   const replaceFileByField = useStore((state) => state.replaceFileByField);
   const updateFileInAllLists = useStore(
@@ -88,22 +82,7 @@ function Table() {
 
   const handleRowClick = async (event: React.MouseEvent, file: File) => {
     if (event.ctrlKey) {
-      const result = await invoke('open_file', {
-        params: {
-          path: file.full_path,
-          ...(programPath ? { program_path: programPath } : {}),
-        },
-      });
-
-      if (!(result as OpenFileResult).success) {
-        toast.error(
-          `Не удалось открыть приложение ${programPath} Открываю в ${
-            (result as OpenFileResult).path === 'explorer'
-              ? 'приложении по умолчанию'
-              : (result as OpenFileResult).path
-          }...`
-        );
-      }
+      await invokeOpenFile(file.full_path);
     } else {
       selectBook(file.title);
     }
@@ -116,15 +95,11 @@ function Table() {
       const includeQuery = buildIncludeQuery([file.file_name]);
       const query = `${typesQuery} ${excludedQuery} ${includeQuery}`.trim();
 
-      const result = await searchFiles({
-        query,
-        includeHighlights: true,
-        count: 1,
-      }) as any;
+      const result = await searchFileByQuery(query);
 
-      if (result?.length) {
-        const updatedFile = result?.[0];
-        // Обновляем файл с хайлайтами во всех списках
+      console.log('result', result)
+      if (result.items?.length) {
+        const updatedFile = result.items?.[0];
         updateFileInAllLists({ file: updatedFile });
 
         replaceFileByField({

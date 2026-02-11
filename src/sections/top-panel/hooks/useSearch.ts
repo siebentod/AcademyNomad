@@ -13,8 +13,7 @@ import {
   searchFiles,
   buildSearchQuery,
   buildIncludeQuery,
-} from './searchUtils';
-import { useWhyDidYouUpdate } from './useWhyDidYouUpdate';
+} from 'src/shared/lib/searchUtils';
 import { useStore } from 'src/store';
 import { useShallow } from 'zustand/shallow';
 import { File, List } from 'src/shared/types';
@@ -28,16 +27,6 @@ export function useSearch(activeProject: string, activeMode: string) {
   const [searchQuery, setSearchQuery] = useState('');
   const setLoading = useStore((state) => state.setLoading);
   const setFiles = useStore((state) => state.setFiles);
-
-  useWhyDidYouUpdate('useSearch', {
-    activeMode,
-    activeProject,
-    excludedQuery,
-    fetchCount,
-    areListsLoaded,
-    searchQuery,
-    typesQuery,
-  });
 
   useEffect(() => {
     const handleSearch = async () => {
@@ -72,13 +61,13 @@ export function useSearch(activeProject: string, activeMode: string) {
             ? true
             : false;
 
-        const { files: result } = await searchFiles({
+        const result = await searchFiles({
           query,
           includeHighlights,
           count: fetchCount,
         });
 
-        const processedResult = result?.items?.map((file: any) => {
+        const processedResult = result?.items?.map((file: File) => {
           // Эта хрень нужна потому что мы в асинхронной функции
           const fileFromLists = getFileByFullPath(file.full_path);
           if (!file.highlights) {

@@ -13,7 +13,7 @@ export interface FilesState {
 export interface FilesSlice extends FilesState {
   setFiles: (files: File[]) => void;
   replaceFileByField: (payload: { file: File; field?: string }) => void;
-  removeFile: (fileName: string) => void;
+  removeFile: (full_path: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   setSearchError: (error: string | null) => void;
@@ -48,6 +48,7 @@ export interface ListsSlice extends ListsState, ListsHelpers {
   renameList: (oldName: string, newName: string) => void;
   updateFileInAllLists: (payload: { file: File; field?: string }) => void;
   updateFilesInAllLists: (files: File[]) => void;
+  removeFileFromAllLists: (params: { full_path: string; field?: string }) => void;
   pinItem: (payload: { listName: string; fileName: string }) => void;
   unpinItem: (payload: { listName: string; fileName: string }) => void;
 }

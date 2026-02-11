@@ -1,4 +1,3 @@
-import { invoke } from '@tauri-apps/api/core';
 import FilterControls from './components/filter-controls';
 import SelectedBookChip from './components/selected-book-chip';
 import HighlightsList from './components/highlights-list';
@@ -10,20 +9,16 @@ import { useState } from 'react';
 import { useHighlights } from './hooks/use-highlights';
 import { useStore } from 'src/store';
 import { useShallow } from 'zustand/shallow';
-import { selectPdfReaderPath } from 'src/store/settings/settingsSelectors';
+import { useInvokeOpenFile } from 'src/shared/hooks/useInvokeOpenFile';
 import type { ProcessedHighlight } from './types';
-import toast from 'react-hot-toast';
-
-interface OpenFileResult {
-  success: boolean;
-  path: string;
-}
 
 export default function HighlightsFeed() {
   const selectedBook = useStore((state) => state.view.selectedBook);
   const visibleHighlightsCount = useStore(
     (state) => state.view.visibleHighlightsCount
   );
+  const areFilesLoading = useStore((state) => state.areFilesLoading);
+  const invokeOpenFile = useInvokeOpenFile();
   const showOnlyAnnotated = useStore((state) => state.view.showOnlyAnnotated);
   const highlightsSearchText = useStore(
     (state) => state.view.highlightsSearchText
@@ -37,28 +32,11 @@ export default function HighlightsFeed() {
     toggleShowOnlyAnnotated,
     setHighlightsSearchText,
   } = useStore(useShallow((state) => state.view.actions));
-  const areFilesLoading = useStore((state) => state.areFilesLoading);
-  const programPath = useStore(selectPdfReaderPath);
 
   const { groupedHighlights, totalFiltered } = useHighlights();
 
   const handleOpenHighlight = async (highlight: ProcessedHighlight) => {
-    const result = await invoke('open_file', {
-      params: {
-        path: highlight.full_path,
-        page: highlight.page,
-        ...(programPath ? { program_path: programPath } : {}),
-      },
-    });
-    if (!(result as OpenFileResult).success) {
-      toast.error(
-        `Не удалось открыть приложение ${programPath} Открываю в ${
-          (result as OpenFileResult).path === 'explorer'
-            ? 'приложении по умолчанию'
-            : (result as OpenFileResult).path
-        }...`
-      );
-    }
+    await invokeOpenFile(highlight.full_path, highlight.page);
   };
 
   return (

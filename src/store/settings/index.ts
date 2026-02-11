@@ -27,49 +27,37 @@ export const createSettingsSlice: StateCreator<
       await get()._setSettings(settings);
     },
 
-    addToExcluded: (file) =>
-      set((state) => {
-        const currentList = state.settings.excludedList || [];
-        const existingIndex = currentList.findIndex(
-          (item) => item.file_name === file.file_name
-        );
+    addToExcluded: (file) => {
+      const currentList = get().settings.excludedList || [];
+      const existingIndex = currentList.findIndex(
+        (item) => item.file_name === file.file_name
+      );
 
-        if (existingIndex === -1) {
-          const newItem: ExcludedListItem = {
-            file_name: file.file_name,
-            dateAdded: new Date().toISOString(),
-          };
-          return {
-            settings: {
-              ...state.settings,
-              excludedList: [...currentList, newItem],
-            },
-          };
-        }
-        return state;
-      }),
+      if (existingIndex === -1) {
+        const newItem: ExcludedListItem = {
+          file_name: file.file_name,
+          dateAdded: new Date().toISOString(),
+        };
+        const newExcludedList = [...currentList, newItem];
+        get()._setSetting('excludedList', newExcludedList);
+      }
+    },
 
-    addToExcludedPath: (path) =>
-      set((state) => {
-        const currentList = state.settings.excludedList || [];
-        const existingIndex = currentList.findIndex(
-          (item) => item.path === path
-        );
+    addToExcludedPath: (path) => {
+      const currentList = get().settings.excludedList || [];
+      const existingIndex = currentList.findIndex(
+        (item) => item.path === path
+      );
 
-        if (existingIndex === -1) {
-          const newItem: ExcludedListItem = {
-            path,
-            dateAdded: new Date().toISOString(),
-          };
-          return {
-            settings: {
-              ...state.settings,
-              excludedList: [...currentList, newItem],
-            },
-          };
-        }
-        return state;
-      }),
+      if (existingIndex === -1) {
+        const newItem: ExcludedListItem = {
+          path,
+          dateAdded: new Date().toISOString(),
+        };
+        const newExcludedList = [...currentList, newItem];
+        get()._setSetting('excludedList', newExcludedList);
+      }
+    },
 
     removeFromExcluded: (identifier) =>
       set((state) => {

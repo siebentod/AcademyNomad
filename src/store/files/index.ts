@@ -18,6 +18,7 @@ export const createFilesSlice: StateCreator<
 
   // Actions
   setFiles: (files) => {
+    // Логика merge файлов с highlights (из Redux)
     set((state) => {
       const existingFilesMap = new Map(state.files.map(file => [file.full_path, file]));
 
@@ -77,9 +78,13 @@ export const createFilesSlice: StateCreator<
     });
   },
 
-  removeFile: (fileName) => set((state) => ({
-    files: state.files.filter((file) => file.file_name !== fileName)
-  })),
+  removeFile: (full_path) => {
+    set((state) => ({
+      files: state.files.filter((file) => file.full_path !== full_path)
+    }));
+    // Удаляем файл из всех списков
+    get().removeFileFromAllLists({ full_path });
+  },
 
   setLoading: (loading) => set({ areFilesLoading: loading }),
   setError: (error) => set({ error }),

@@ -11,6 +11,7 @@ import type { File, List, ListItem } from 'src/shared/types';
 import { useStore } from 'src/store';
 import { getListByName } from 'src/store/lists/listsSelectors';
 import { useModal } from 'src/sections/modals/useModal';
+import { tryToFindFile } from 'src/shared/lib/everything';
 
 interface ContextMenuItem {
   id: string;
@@ -21,22 +22,6 @@ interface ContextMenuItem {
 
 type MenuItem = ContextMenuItem | Submenu;
 
-function processDateToEverythingQuery(isoString: string): string {
-  const date = new Date(isoString);
-
-  // Добавляем 3 часа к UTC времени
-  date.setUTCHours(date.getUTCHours() + 3);
-
-  // Получаем компоненты даты и времени в формате UTC после добавления 3 часов
-  const year = date.getUTCFullYear();
-  const month = String(date.getUTCMonth() + 1).padStart(2, '0'); // Месяцы начинаются с 0
-  const day = String(date.getUTCDate()).padStart(2, '0');
-  const hours = String(date.getUTCHours()).padStart(2, '0');
-  const minutes = String(date.getUTCMinutes()).padStart(2, '0');
-  const seconds = String(date.getUTCSeconds()).padStart(2, '0');
-
-  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
-}
 
 // async function searchFileByField(file: File, field: string): Promise<any> {
 //   const query = `${typesQuery} ${excludedQuery}`;
@@ -47,41 +32,6 @@ function processDateToEverythingQuery(isoString: string): string {
 //   return result;
 // }
 
-async function tryToFindFile(file: File): Promise<any> {
-  let result: any;
-
-  // Первая попытка: frn
-  result = (await invoke('get_everything_with_meta', {
-    params: { query: `frn:"${file.id}"` },
-  })) as any[];
-  if (result?.length === 1) return result[0];
-  if (result?.length > 1) {
-    toast.error('Найдено более одного файла по frn');
-    return;
-  }
-
-  // Вторая попытка: dc
-  const formattedDate = processDateToEverythingQuery(file.created_date || '');
-  result = (await invoke('get_everything_with_meta', {
-    params: { query: `dc:"${formattedDate}"` },
-  })) as any[];
-  if (result?.length === 1) return result[0];
-  if (result?.length > 1) {
-    toast.error('Найдено более одного файла по дате создания');
-    return;
-  }
-
-  // Третья попытка: поиск на фронте
-  // result = await searchFileByField(file, 'pdf_creator');
-  // if (result) return result;
-  if (Array.isArray(result) && result.length > 1) {
-    toast.error('Найдено более одного файла при альтернативном поиске');
-    return;
-  }
-
-  toast.error('Файл не найден ни одним способом');
-  return;
-}
 
 const confirm = async (message: string): Promise<boolean> => {
   return window.confirm(message);
@@ -169,7 +119,7 @@ export const useTableRowsContextMenu = () => {
             );
             if (confirmed) {
               await invoke('delete_file', { path: file.full_path });
-              removeFile(file.file_name);
+              removeFile(file.full_path);
             }
           } catch (error) {
             console.error('Ошибка удаления файла:', error);
@@ -183,7 +133,6 @@ export const useTableRowsContextMenu = () => {
         action: async () => {
           try {
             addToExcluded(file);
-            removeFile(file.file_name);
           } catch (error) {
             console.error('Ошибка открытия файла:', error);
           }

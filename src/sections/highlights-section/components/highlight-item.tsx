@@ -33,7 +33,7 @@ function HighlightItem({ highlight, onClick }: HighlightItemProps) {
         }}
       />
       <div
-        className="flex-1 px-3 pl-2 pb-2 pt-2 border-b border-gray-700 hover:bg-gray-800 transition-colors cursor-pointer group"
+        className="flex-1 px-3 pl-2 pb-2 pt-2 border-b border-gray-700 hover:bg-surface-hover transition-colors cursor-pointer group"
         onClick={() => onClick(highlight)}
       >
         <div className="flex justify-between items-start mb-1">
