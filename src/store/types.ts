@@ -1,4 +1,11 @@
-import type { File, Lists, List, ListItem, Settings } from 'src/shared/types';
+import type {
+  File,
+  Lists,
+  List,
+  ListItem,
+  Settings,
+  Highlight,
+} from 'src/shared/types';
 
 export interface FilesState {
   files: File[];
@@ -8,49 +15,59 @@ export interface FilesState {
   currentQuery: string;
   currentFilters: Record<string, any>;
   lastSearchTime: string | null;
+  searchTrigger: number;
 }
 
 export interface FilesSlice extends FilesState {
-  setFiles: (files: File[]) => void;
-  replaceFileByField: (payload: { file: File; field?: string }) => void;
+  setFiles: (files: File[]) => Promise<void>;
+  updateFileWithHighlights: (
+    file: File,
+    highlights: Highlight[]
+  ) => Promise<void>;
   removeFile: (full_path: string) => void;
   setLoading: (loading: boolean) => void;
-  setError: (error: string | null) => void;
-  setSearchError: (error: string | null) => void;
-  setCurrentQuery: (query: string) => void;
-  setCurrentFilters: (filters: Record<string, any>) => void;
-  clearFiles: () => void;
+  triggerSearch: () => void;
+}
+
+export interface HighlightsState {
+  highlightsTrigger: number;
+  highlightsTotalCount: number;
+}
+
+export interface HighlightsSlice extends HighlightsState {
+  deleteTemporaryHighlights: () => Promise<void>;
+  getHighlights: (params: {
+    limit?: number;
+    offset?: number;
+    list_id?: number;
+    file_id?: number;
+    selectedBook?: string | null;
+    highlightsSearchText?: string;
+    showOnlyAnnotated?: boolean;
+  }) => Promise<{ items: Highlight[]; total: number }>;
+  triggerHighlights: () => void;
+  setHighlightsTotalCount: (highlightsTotalCount: number) => void;
 }
 
 export interface ListsState {
   lists: Lists;
+  activeList: List | null;
   areListsLoaded: boolean;
 }
 
 export interface ListsHelpers {
-  _setLists: (lists: Lists) => void;
-  _setList: (payload: { listName: string; value: ListItem[] }) => void;
-  _writeList: (payload: {
-    listName: string;
-    value: ListItem[];
-  }) => Promise<void>;
-  _writeLists: (lists: Lists) => Promise<void>;
   _loadLists: () => Promise<void>;
-  _removeList: (listName: string) => Promise<void>;
-  _renameList: (oldName: string, newName: string) => Promise<void>;
 }
 
 export interface ListsSlice extends ListsState, ListsHelpers {
-  createList: (listName: string, value: ListItem[]) => void;
-  addToList: (payload: { listName: string; itemData: File }) => void;
-  removeFromList: (payload: { listName: string; fileName: string }) => void;
-  removeList: (listName: string) => void;
-  renameList: (oldName: string, newName: string) => void;
-  updateFileInAllLists: (payload: { file: File; field?: string }) => void;
-  updateFilesInAllLists: (files: File[]) => void;
-  removeFileFromAllLists: (params: { full_path: string; field?: string }) => void;
-  pinItem: (payload: { listName: string; fileName: string }) => void;
-  unpinItem: (payload: { listName: string; fileName: string }) => void;
+  createList: (listName: string, value: ListItem[]) => Promise<void>;
+  addToList: (payload: { listName: string; itemData: File }) => Promise<void>;
+  removeFromList: (payload: { listName: string; fileId: number }) => Promise<void>;
+  setActiveList: (listName: string) => Promise<void>;
+  removeList: (listName: string) => Promise<void>;
+  renameList: (oldName: string, newName: string) => Promise<void>;
+  pinItem: (payload: { listName: string; fileId: number }) => Promise<void>;
+  unpinItem: (payload: { listName: string; fileId: number }) => Promise<void>;
 }
 
 export interface SettingsState {
@@ -67,7 +84,6 @@ export interface SettingsHelpers {
 }
 
 export interface SettingsSlice extends SettingsState, SettingsHelpers {
-
   saveSettings: (settings: Settings) => Promise<void>;
   addToExcluded: (file: File) => void;
   addToExcludedPath: (path: string) => void;
@@ -76,21 +92,19 @@ export interface SettingsSlice extends SettingsState, SettingsHelpers {
 
 export interface ViewFilterSlice {
   view: {
+    searchQuery: string;
     selectedBook: string | null;
-    hiddenBooks: string[];
     visibleHighlightsCount: number;
-    activeProject: string;
     highlightsSearchText: string;
     showOnlyAnnotated: boolean;
     activeMode: 'highlights' | 'no-highlights';
     fetchCount: number;
     hasMore: boolean | undefined;
     actions: {
+      setSearchQuery: (query: string) => void;
       selectBook: (fileName: string | null) => void;
       removeBookFilter: () => void;
-      hideBook: (fileName: string) => void;
       resetCount: () => void;
-      setActiveProject: (project: string) => void;
       setShowOnlyAnnotated: (showOnlyAnnotated: boolean) => void;
       setHighlightsSearchText: (newText: string) => void;
       toggleShowOnlyAnnotated: () => void;
@@ -103,5 +117,8 @@ export interface ViewFilterSlice {
   };
 }
 
-
-export type Store = FilesSlice & ListsSlice & SettingsSlice & ViewFilterSlice;
+export type Store = FilesSlice &
+  ListsSlice &
+  SettingsSlice &
+  ViewFilterSlice &
+  HighlightsSlice;

@@ -17,11 +17,3 @@ export const getFileByFullPath = (fullPath: string): File | null => {
   }
   return null;
 };
-
-export const getListByName = (listName: string | null): ListItem[] => {
-  if (!listName) return [];
-  
-  const state = useStore.getState();
-  const foundList = state.lists.find((list) => list.name === listName);
-  return foundList ? foundList.items : [];
-};

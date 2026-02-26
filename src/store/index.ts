@@ -4,12 +4,14 @@ import { createSettingsSlice } from './settings';
 import { createFilesSlice } from './files';
 import { createListsSlice } from './lists';
 import { createViewFilterSlice } from './view-filter';
+import { createHighlightsSlice } from './highlights';
 
 export const useStore = create<Store>()((...a) => ({
   ...createSettingsSlice(...a),
   ...createFilesSlice(...a),
   ...createListsSlice(...a),
   ...createViewFilterSlice(...a),
+  ...createHighlightsSlice(...a),
 }));
 
 const store = useStore.getState();
