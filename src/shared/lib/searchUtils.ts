@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import { File } from '../types';
+import { File, FileResult } from '../types';
 
 export interface SearchParams {
   query: string;
@@ -12,7 +12,7 @@ export interface InvokeSearchResult {
   has_more: boolean;
 }
 
-export const searchFileByQuery = async (query: string) => {
+export const searchOneFileByQuery = async (query: string) => {
   const result = await searchFiles({
     query,
     includeHighlights: true,
@@ -24,16 +24,15 @@ export const searchFileByQuery = async (query: string) => {
 
 export async function searchFiles(params: SearchParams) {
   const { query, includeHighlights, count } = params;
+  console.log('query', query);
 
-  const result = await invoke('get_everything', {
+  const result = (await invoke('get_everything', {
     params: {
       query,
-      include_highlights: includeHighlights,
+      include_highlights: includeHighlights || false,
       count,
     },
-  }) as InvokeSearchResult;
-
-  console.log('searchFiles_result', result);
+  })) as InvokeSearchResult;
 
   return result;
 }
@@ -49,10 +48,23 @@ export function buildSearchQuery({
   excludedQuery?: string;
   includeQuery?: string;
 }): string {
-  return `${searchQuery || ''} ${typesQuery || ''} ${excludedQuery || ''} ${includeQuery || ''}`.trim();
+  return `${searchQuery || ''} ${typesQuery || ''} ${excludedQuery || ''} ${
+    includeQuery || ''
+  }`.trim();
 }
 
 export function buildIncludeQuery(filePaths: string[]): string {
   if (!filePaths.length) return '';
-  return filePaths.map(filePath => `<${filePath}>`).join(' | ');
+  return filePaths.map((filePath) => `<"${filePath}">`).join(' | ');
+}
+
+export async function searchHighlightsForFiles(
+  paths: string[]
+): Promise<FileResult[]> {
+  const result = await invoke<FileResult[]>('get_highlights_for_files', {
+    paths,
+  });
+  console.log('resusltz', result);
+
+  return result;
 }

@@ -1,46 +1,41 @@
-import { LazyStore } from '@tauri-apps/plugin-store';
-import type { List, ListItem, Lists } from 'src/shared/types';
+import { initDb, getDb } from 'src/db';
+import type { ListItem, Lists } from 'src/shared/types';
 import type { ListsSlice } from '../types';
-import { updateListByName } from './listsUtils';
-
-const storeFile = new LazyStore('lists.json');
 
 export const createPrivateSlice = (set: any, get: () => ListsSlice) => ({
-  _setLists: async (lists: Lists) => {
-    set({ lists });
-    await get()._writeLists(lists);
-  },
-
-  _setList: async ({
-    listName,
-    value,
-  }: {
-    listName: string;
-    value: ListItem[];
-  }) => {
-    set((state: ListsSlice) => ({
-      lists: updateListByName(state.lists, listName, value),
-    }));
-    await get()._writeList({ listName, value });
-  },
-
   _loadLists: async () => {
     try {
-      const entries = await storeFile.entries();
-      const loadedListsObj = Object.fromEntries(entries) as Record<
-        string,
-        ListItem[]
-      >;
+      await initDb();
+      const db = getDb();
 
-      if (!Object.keys(loadedListsObj).length) {
+      const allLists = await db.select<Array<{ id: number; name: string }>>(
+        'SELECT id, name FROM lists'
+      );
+
+      if (!allLists.length) {
         set({ lists: [], areListsLoaded: true });
         return;
       }
 
-      const loadedLists: Lists = Object.entries(loadedListsObj).map(
-        ([name, items]) => ({
-          name,
-          items,
+      const loadedLists: Lists = await Promise.all(
+        allLists.map(async (list) => {
+          const items = await db.select<ListItem[]>(
+            `SELECT 
+              f.id, f.created_date, f.date_added, f.extension, f.file_name, f.full_path,
+              f.is_locked, f.modified_date,
+              f.pdf_author, f.pdf_creator, f.pdf_title, f.size, f.title
+            FROM files f
+            INNER JOIN file_lists fl ON f.id = fl.file_id
+            WHERE fl.list_id = $1
+            ORDER BY fl.date_added DESC`,
+            [list.id]
+          );
+
+          return {
+            name: list.name,
+            id: list.id,
+            items,
+          };
         })
       );
 
@@ -48,59 +43,6 @@ export const createPrivateSlice = (set: any, get: () => ListsSlice) => ({
     } catch (error) {
       console.error('Ошибка загрузки списков:', error);
       set({ lists: [], areListsLoaded: true });
-    }
-  },
-
-  _writeList: async ({
-    listName,
-    value,
-  }: {
-    listName: string;
-    value: ListItem[];
-  }) => {
-    try {
-      await storeFile.set(listName, value);
-      await storeFile.save();
-    } catch (error) {
-      console.error(`Ошибка сохранения списка "${listName}":`, error);
-      throw error;
-    }
-  },
-
-  _writeLists: async (lists: Lists) => {
-    try {
-      console.log('Saving lists:', lists);
-      await Promise.all(
-        lists.map((list: List) => storeFile.set(list.name, list.items))
-      );
-      await storeFile.save();
-    } catch (error) {
-      console.error('Ошибка сохранения всех списков:', error);
-      throw error;
-    }
-  },
-
-  _removeList: async (listName: string) => {
-    try {
-      await storeFile.delete(listName);
-      await storeFile.save();
-    } catch (error) {
-      console.error(`Ошибка удаления списка "${listName}":`, error);
-      throw error;
-    }
-  },
-
-  _renameList: async (oldName: string, newName: string) => {
-    try {
-      const listData = await storeFile.get(oldName) as ListItem[];
-      if (listData) {
-        await storeFile.set(newName, listData);
-        await storeFile.delete(oldName);
-        await storeFile.save();
-      }
-    } catch (error) {
-      console.error(`Ошибка переименования списка "${oldName}" в "${newName}":`, error);
-      throw error;
     }
   },
 });

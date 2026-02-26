@@ -10,26 +10,32 @@ export const createViewFilterSlice: StateCreator<
 > = (set, get) => {
   return {
     view: {
-      activeProject: '',
       activeMode: 'highlights',
+      searchQuery: '',
 
       fetchCount: DEFAULT_FETCH_COUNT,
       hasMore: undefined,
 
       selectedBook: null,
-      hiddenBooks: [],
 
       highlightsSearchText: '',
       visibleHighlightsCount: 50,
       showOnlyAnnotated: false,
 
       actions: {
+        setSearchQuery: (query: string) => {
+          set((state) => ({
+            view: {
+              ...state.view,
+              searchQuery: query,
+            },
+          }));
+        },
         selectBook: (fileName: string | null) => {
           set((state) => ({
             view: {
               ...state.view,
               selectedBook: fileName,
-              hiddenBooks: [],
               visibleHighlightsCount: 50,
             },
           }));
@@ -45,40 +51,11 @@ export const createViewFilterSlice: StateCreator<
           }));
         },
 
-        hideBook: (fileName: string) => {
-          set((state) => {
-            const isHidden = state.view.hiddenBooks.includes(fileName);
-            const newHiddenBooks = isHidden
-              ? state.view.hiddenBooks.filter((book) => book !== fileName)
-              : [...state.view.hiddenBooks, fileName];
-
-            return {
-              view: {
-                ...state.view,
-                hiddenBooks: newHiddenBooks,
-                selectedBook: null,
-                visibleHighlightsCount: 50,
-              },
-            };
-          });
-        },
-
         resetCount: () => {
           set((state) => ({
             view: {
               ...state.view,
               visibleHighlightsCount: 50,
-            },
-          }));
-        },
-
-        setActiveProject: (project: string) => {
-          set((state) => ({
-            view: {
-              ...state.view,
-              activeProject: project,
-              fetchCount: DEFAULT_FETCH_COUNT,
-              selectedBook: null,
             },
           }));
         },

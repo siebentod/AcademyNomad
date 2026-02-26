@@ -36,7 +36,7 @@ export const createSettingsSlice: StateCreator<
       if (existingIndex === -1) {
         const newItem: ExcludedListItem = {
           file_name: file.file_name,
-          dateAdded: new Date().toISOString(),
+          date_added: new Date().toISOString(),
         };
         const newExcludedList = [...currentList, newItem];
         get()._setSetting('excludedList', newExcludedList);
@@ -52,7 +52,7 @@ export const createSettingsSlice: StateCreator<
       if (existingIndex === -1) {
         const newItem: ExcludedListItem = {
           path,
-          dateAdded: new Date().toISOString(),
+          date_added: new Date().toISOString(),
         };
         const newExcludedList = [...currentList, newItem];
         get()._setSetting('excludedList', newExcludedList);

@@ -14,11 +14,11 @@ pub type WatcherMap = Arc<Mutex<HashMap<String, notify::RecommendedWatcher>>>;
 pub struct FileChangeEvent {
     pub event_type: String, // "created", "modified", "deleted"
     pub file_path: String,
-    pub metadata: Option<super::file_commands::FileMetadata>, // Используем FileMetadata из другого модуля
+    pub metadata: Option<super::types::FileMetadata>, // Используем FileMetadata из types модуля
 }
 
-// Импортируем функцию parse_file_metadata из модуля file_ops
-use super::file_commands::parse_file_metadata;
+// Импортируем функцию parse_file_metadata из types модуля
+use super::types::parse_file_metadata;
 
 #[command]
 pub async fn start_watching_directory(

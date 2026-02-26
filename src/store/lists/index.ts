@@ -3,197 +3,132 @@ import type { Lists, List, ListItem } from 'src/shared/types';
 import type { Store, ListsSlice } from '../types';
 import { createPrivateSlice } from './index.private';
 import { findListByName } from './listsUtils';
+import { ListsDB } from 'src/db/ListsDB';
+import { FilesDB } from 'src/db/FilesDB';
+import toast from 'react-hot-toast';
 
-export const createListsSlice: StateCreator<
-  Store,
-  [],
-  [],
-  ListsSlice
-> = (set, get) => {
+export const createListsSlice: StateCreator<Store, [], [], ListsSlice> = (
+  set,
+  get
+) => {
   const privateSlice = createPrivateSlice(set, get);
 
   return {
     lists: [],
+    activeList: null,
     areListsLoaded: false,
 
     ...privateSlice,
 
+    setActiveList: async (listName: string) => {
+      get().view.actions.setSearchQuery('');
+      if (!listName) {
+        set({ activeList: null });
+        return;
+      }
+      const list = await ListsDB.getListByName(listName);
+      if (!list?.id) {
+        set({ activeList: null });
+        return;
+      }
+      const items = await FilesDB.getFilesByList(list.id);
+      set({ activeList: { ...list, items } });
+    },
+
     createList: async (listName: string, value: ListItem[]) => {
-      get()._setList({ listName, value });
+      await ListsDB.createNewList(listName, value);
+      set({ lists: [...get().lists, { name: listName, items: value }] });
     },
 
     addToList: async ({ listName, itemData }) => {
       const foundList = findListByName(get().lists, listName);
-      const currentList = (foundList?.items as ListItem[]) || [];
+      const listItems = (foundList?.items as ListItem[]) || [];
+      const activeListName = get().activeList?.name;
 
-      const existingIndex = currentList.findIndex(
+      if (!foundList || !foundList.id) {
+        toast.error('Список не найден');
+        return;
+      }
+
+      const itemExists = listItems.some(
         (item) => item.file_name === itemData.file_name
       );
 
-      if (existingIndex === -1) {
+      if (itemExists) {
+        toast.error('Файл с таким именем уже существует');
+      } else {
         const newItem: ListItem = {
           ...itemData,
-          dateAdded: new Date().toISOString(),
+          date_added: new Date().toISOString(),
         };
-        const newItems = [...currentList, newItem];
+        const newItems = [...listItems, newItem];
 
-        get()._setList({ listName, value: newItems });
+        await FilesDB.addFileToList(itemData, foundList.id);
+
+        if (activeListName) {
+          get().setActiveList(activeListName);
+        }
+
+        // 🔥Возможно вместо этого надо вручную обновлять нужные состояния. Какие?
+        get().triggerSearch();
       }
     },
 
-    removeFromList: async ({ listName, fileName }) => {
-      const foundList = findListByName(get().lists, listName);
-      if (foundList) {
-        const currentList = foundList.items as ListItem[];
-        const filteredItems = currentList.filter(
-          (item) => item.file_name !== fileName
-        );
-
-        get()._setList({ listName, value: filteredItems });
+    removeFromList: async ({ listName, fileId }) => {
+      const listId = findListByName(get().lists, listName)?.id;
+      if (!listId) {
+        toast.error('Список не найден');
+        return;
       }
+      await ListsDB.removeFileFromList({ listId, fileId });
+      get().triggerSearch();
     },
 
     removeList: async (listName) => {
-      const lists = get().lists.filter((list: List) => list.name !== listName);
-      set({ lists });
-      await get()._removeList(listName);
+      const listId = findListByName(get().lists, listName)?.id;
+      if (!listId) {
+        toast.error('Список не найден');
+        return;
+      }
+      await ListsDB.removeList(listId);
+      set({ lists: get().lists.filter((list) => list.id !== listId) });
+      get().triggerSearch();
     },
 
     renameList: async (oldName: string, newName: string) => {
-      const list = get().lists.find((l: List) => l.name === oldName);
-      if (!list) return;
-      const existingList = get().lists.find((l: List) => l.name === newName);
-      if (existingList) {
-        throw new Error('Список с таким именем уже существует');
-      }      
-      const updatedLists = get().lists.map((l: List) => 
-        l.name === oldName ? { ...l, name: newName } : l
-      );      
-      set({ lists: updatedLists });
-      await get()._renameList(oldName, newName);
+      const listId = findListByName(get().lists, oldName)?.id;
+      if (!listId) {
+        toast.error('Список не найден');
+        return;
+      }
+      await ListsDB.renameList(listId, newName);
+      set({ lists: get().lists.map((list) => (list.id === listId ? { ...list, name: newName } : list)) });
     },
 
-    updateFileInAllLists: async ({
-      file: updatedFile,
-      field = 'full_path',
-    }) => {
-      let hasChanges = false;
-
-      const updatedLists: Lists = get().lists.map((list) => {
-        const updatedItems = (list.items as ListItem[]).map((file) => {
-          if (updatedFile[field] === file[field]) {
-            hasChanges = true;
-            return {
-              ...updatedFile,
-              dateAdded: file.dateAdded,
-              is_pinned: file.is_pinned,
-              pinned_order: file.pinned_order,
-            };
-          }
-          return file;
-        });
-
-        return { ...list, items: updatedItems };
-      });
-
-      if (hasChanges) {
-        get()._setLists(updatedLists);
+    pinItem: async ({ listName, fileId }) => {
+      console.log('listName', listName);
+      console.log('fileId', fileId);
+      const listId = findListByName(get().lists, listName)?.id;
+      if (!listId) {
+        toast.error('Список не найден');
+        return;
       }
+
+      ListsDB.pinItemInList(fileId, listId);
+
+      get().triggerSearch();
     },
 
-    updateFilesInAllLists: async (updatedFiles) => {
-      // Создаем Map для быстрого поиска по full_path
-      const updatedFilesMap = new Map(
-        updatedFiles.map((file) => [file.full_path, file])
-      );
-      let hasChanges = false;
-
-      const updatedLists: Lists = get().lists.map((list) => {
-        const updatedItems = (list.items as ListItem[]).map((file) => {
-          const updatedFile = updatedFilesMap.get(file.full_path);
-          if (updatedFile) {
-            hasChanges = true;
-            return {
-              ...updatedFile,
-              dateAdded: file.dateAdded,
-              is_pinned: file.is_pinned,
-              pinned_order: file.pinned_order,
-            };
-          }
-          return file;
-        });
-
-        return { ...list, items: updatedItems };
-      });
-
-      if (hasChanges) {
-        get()._setLists(updatedLists);
+    unpinItem: async ({ listName, fileId }) => {
+      const listId = findListByName(get().lists, listName)?.id;
+      if (!listId) {
+        toast.error('Список не найден');
+        return;
       }
-    },
 
-    removeFileFromAllLists: async ({
-      full_path,
-    }) => {
-      let hasChanges = false;
+      ListsDB.unpinItemInList(fileId, listId);
 
-      const updatedLists: Lists = get().lists.map((list) => {
-        const filteredItems = (list.items as ListItem[]).filter((file) => {
-          if (file.full_path === full_path) {
-            hasChanges = true;
-            return false;
-          }
-          return true;
-        });
-
-        return { ...list, items: filteredItems };
-      });
-
-      if (hasChanges) {
-        get()._setLists(updatedLists);
-      }
-    },
-
-    pinItem: async ({ listName, fileName }) => {
-      const foundList = findListByName(get().lists, listName);
-      if (foundList) {
-        const currentList = foundList.items as ListItem[];
-        const itemIndex = currentList.findIndex(
-          (item) => item.file_name === fileName
-        );
-
-        if (itemIndex !== -1) {
-          const item = currentList[itemIndex];
-          const maxOrder = Math.max(
-            ...currentList
-              .filter((i) => i.is_pinned)
-              .map((i) => i.pinned_order ?? 0),
-            -1
-          );
-
-          item.is_pinned = true;
-          item.pinned_order = maxOrder + 1;
-
-          get()._setList({ listName, value: [...currentList] });
-        }
-      }
-    },
-
-    unpinItem: async ({ listName, fileName }) => {
-      const foundList = findListByName(get().lists, listName);
-      if (foundList) {
-        const currentList = foundList.items as ListItem[];
-        const itemIndex = currentList.findIndex(
-          (item) => item.file_name === fileName
-        );
-
-        if (itemIndex !== -1) {
-          const item = currentList[itemIndex];
-          item.is_pinned = false;
-          delete item.pinned_order;
-
-          get()._setList({ listName, value: [...currentList] });
-        }
-      }
+      get().triggerSearch();
     },
   };
 };

@@ -1,15 +1,20 @@
 import Split from 'react-split';
 import { Toaster } from 'react-hot-toast';
-import BooksSection from 'src/sections/books-section';
-import HighlightsSection from 'src/sections/highlights-section';
+import BooksSection from 'src/modules/books-section';
+import HighlightsSection from 'src/modules/highlights-section';
 import { useStore } from 'src/store';
-import ModalsContainer from 'src/sections/modals';
-import Tabs from 'src/sections/lists-tabs';
-import SearchPanel from 'src/sections/top-panel';
+import ModalsContainer from 'src/modules/modals';
+import Tabs from 'src/modules/lists';
+import SearchPanel from 'src/modules/top-panel';// В твоем главном файле или App.tsx
+import { migrateFromJsonToDb } from './db/migrate';
+// import { runMigrations } from './db/migrations/index';
+
+// При первом запуске или в useEffect
+// await migrateFromJsonToDb();
+// await runMigrations();
 
 function App() {
   const areListsLoaded = useStore((state) => state.areListsLoaded);
-
   const activeMode = useStore((state) => state.view.activeMode);
 
   if (!areListsLoaded) return <div>Загрузка...</div>;
@@ -23,20 +28,23 @@ function App() {
           <div className="overflow-x-auto">
             <Tabs />
 
-            {activeMode === 'highlights' ? (
-              <Split
-                className="flex max-h-[77dvh] bg-surface"
-                sizes={[50, 50]}
-                minSize={200}
-                gutterSize={8}
-                direction="horizontal"
-              >
-                <BooksSection />
-                <HighlightsSection />
-              </Split>
-            ) : (
-              <BooksSection />
-            )}
+            {
+              {
+                highlights: (
+                  <Split
+                    className="flex max-h-[77dvh] bg-surface"
+                    sizes={[50, 50]}
+                    minSize={200}
+                    gutterSize={8}
+                    direction="horizontal"
+                  >
+                    <BooksSection />
+                    <HighlightsSection />
+                  </Split>
+                ),
+                'no-highlights': <BooksSection />,
+              }[activeMode]
+            }
           </div>
         </div>
       </div>

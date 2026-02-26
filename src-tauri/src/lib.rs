@@ -21,11 +21,13 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_sql::Builder::new().build())
         .manage(watchers)
         .invoke_handler(tauri::generate_handler![
             // Здесь просто указываем имена функций
             get_everything,
             get_everything_with_meta,
+            get_highlights_for_files,
             edit_filename,
             open_file,
             delete_file,

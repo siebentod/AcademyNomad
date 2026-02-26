@@ -1,12 +1,13 @@
 import { StateCreator } from 'zustand';
 import type { Store, FilesSlice } from '../types';
+import { countHighlightsAndAnnotations } from 'src/shared/lib/utils';
+import { FilesDB } from 'src/db/FilesDB';
+import { HighlightsDB } from 'src/db/HighlightsDB';
 
-export const createFilesSlice: StateCreator<
-  Store,
-  [],
-  [],
-  FilesSlice
-> = (set, get) => ({
+export const createFilesSlice: StateCreator<Store, [], [], FilesSlice> = (
+  set,
+  get
+) => ({
   // Initial state
   files: [],
   areFilesLoading: false,
@@ -15,88 +16,70 @@ export const createFilesSlice: StateCreator<
   currentQuery: '',
   currentFilters: {},
   lastSearchTime: null,
+  searchTrigger: 0,
 
-  // Actions
-  setFiles: (files) => {
-    // Логика merge файлов с highlights (из Redux)
-    set((state) => {
-      const existingFilesMap = new Map(state.files.map(file => [file.full_path, file]));
-
-      const mergedFiles = files.map(newFile => {
-        const existingFile = existingFilesMap.get(newFile.full_path);
-        // Если получен файл с хайлайтами, всегда берем его
-        if (newFile.highlights) {
-          return newFile;
-        }
-        // Если получен файл без хайлайтов, но он уже есть с хайлайтами, используем старый с хайлайтами
-        if (existingFile && existingFile.highlights) {
-          return existingFile;
-        }
-        // Если нет, используем новый
-        return newFile;
-      });
-
-      return {
-        files: mergedFiles,
-        lastSearchTime: new Date().toISOString()
-      };
+  setFiles: async (files) => {
+    set({
+      files,
+      lastSearchTime: new Date().toISOString(),
     });
-
-    // Обновить файлы с highlights во всех lists (middleware логика)
-    const filesWithHighlights = files.filter(file => file.highlights);
-    if (filesWithHighlights.length > 0) {
-      get().updateFilesInAllLists(filesWithHighlights);
-    }
   },
 
-  replaceFileByField: ({ file, field = 'full_path' }) => {
+  updateFileWithHighlights: async (file, highlights) => {
+    const [highlightsCount, annotationsCount] =
+      countHighlightsAndAnnotations(highlights);
+      console.log('file', file)
+
     set((state) => {
-      const originalFiles = [...state.files];
       const updatedFiles = state.files.map((item) => {
-        if (item[field] === file[field]) {
-          console.log('replaceFileByField: Заменяю файл по полю', field, ':', {
-            старый: item,
-            новый: file
-          });
-          return file;
+        if (item.full_path === file.full_path) {
+          return {
+            ...file,
+            new_numbers: true,
+            highlights_count: highlightsCount,
+            annotations_count: annotationsCount,
+          };
         }
         return item;
       });
 
-      const hasChanges = updatedFiles.some((newFile, index) => newFile !== originalFiles[index]);
-      if (hasChanges) {
-        console.log('replaceFileByField: Замена произошла');
-      } else {
-        console.log('replaceFileByField: Замена НЕ произошла, файл не найден по полю', field, 'со значением:', file[field]);
-        console.log('replaceFileByField: Доступные значения поля', field, 'в файлах:', state.files.map(f => f[field]));
-      }
-
       return {
         files: updatedFiles,
-        lastSearchTime: new Date().toISOString()
+        highlights: [],
+        lastSearchTime: new Date().toISOString(),
       };
     });
+
+    const result = await FilesDB.upsertFileBy(
+      {
+        ...file,
+        highlights_count: highlightsCount,
+        annotations_count: annotationsCount,
+      },
+      { full_path: file.full_path }
+    );
+    const lastInsertId = Number(result?.lastInsertId) || 0;
+
+    await HighlightsDB.updateHighlightsFor({
+      highlights: file.highlights || [],
+      fileId: file.id || lastInsertId,
+      // ЕСЛИ ЗАСУНУТЬ СЮДА PDF ИЗ EVERYTHING, ТАМ БУДЕТ НЕКОРРЕКТНЫЙ ID И В БД ПОЛОМАЕТСЯ ИНКРЕМЕНТЕР
+    });
+    get().triggerHighlights();
   },
 
   removeFile: (full_path) => {
     set((state) => ({
-      files: state.files.filter((file) => file.full_path !== full_path)
+      files: state.files.filter((file) => file.full_path !== full_path),
     }));
-    // Удаляем файл из всех списков
-    get().removeFileFromAllLists({ full_path });
+    FilesDB.removeFile({ full_path });
   },
 
   setLoading: (loading) => set({ areFilesLoading: loading }),
-  setError: (error) => set({ error }),
-  setSearchError: (error) => set({ searchError: error }),
-  setCurrentQuery: (query) => set({ currentQuery: query }),
-  setCurrentFilters: (filters) => set({ currentFilters: filters }),
 
-  clearFiles: () => set({
-    files: [],
-    currentQuery: '',
-    currentFilters: {},
-    error: null,
-    searchError: null
-  }),
+  triggerSearch: () => {
+    set((state) => ({
+      searchTrigger: state.searchTrigger + 1,
+    }));
+  },
 });

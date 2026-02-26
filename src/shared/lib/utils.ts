@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import type { Highlight } from 'src/shared/types'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -39,6 +40,24 @@ export function getDateKey(timestamp: number) {
   });
 }
 
+export function getFileName(filePath: string): string {
+  if (!filePath) return '';
+  
+  // Разделяем путь по обратным слешам и берем последний элемент
+  const fileNameWithExt = filePath.split('\\').pop() || filePath.split('/').pop() || '';
+  
+  // Находим последнюю точку и отсекаем расширение
+  const lastDotIndex = fileNameWithExt.lastIndexOf('.');
+  
+  // Если точка найдена и это не начало файла, отсекаем расширение
+  if (lastDotIndex > 0) {
+    return fileNameWithExt.substring(0, lastDotIndex);
+  }
+  
+  // Если расширение не найдено, возвращаем все имя файла
+  return fileNameWithExt;
+}
+
 export function processDateToEverythingQuery(isoString: string): string {
   const date = new Date(isoString);
 
@@ -54,4 +73,47 @@ export function processDateToEverythingQuery(isoString: string): string {
   const seconds = String(date.getUTCSeconds()).padStart(2, '0');
 
   return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+}
+
+export function convertHighlightsToDB(highlights: Highlight[]) {
+  return highlights.map(highlight => {
+    const { color, ...highlightWithoutColor } = highlight;
+    
+    return {
+      ...highlightWithoutColor,
+      ...(color && {
+        color_r: color[0],
+        color_g: color[1],
+        color_b: color[2]
+      })
+    };
+  });
+}
+
+export function convertHighlightsToArray(highlights: Highlight[]) {
+  return highlights.map(highlight => {
+    const { color_r, color_g, color_b, ...highlightWithoutColor } = highlight;
+    
+    return {
+      ...highlightWithoutColor,
+      color: (color_r !== undefined && color_g !== undefined && color_b !== undefined) 
+        ? [color_r, color_g, color_b] as [number, number, number]
+        : undefined
+    };
+  });
+}
+
+export function countHighlightsAndAnnotations(highlights: Highlight[]): [number, number] {
+  if (!highlights || !Array.isArray(highlights)) {
+    return [0, 0];
+  }
+  
+  const highlightsCount = highlights.length;
+  const annotationsCount = highlights.filter(
+    (highlight: Highlight) =>
+      highlight.annotation_text &&
+      highlight.annotation_text.trim() !== ''
+  ).length;
+  
+  return [highlightsCount, annotationsCount];
 }
